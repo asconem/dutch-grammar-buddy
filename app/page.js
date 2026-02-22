@@ -4,18 +4,23 @@ import { useState, useRef, useEffect } from "react";
 
 const MAX_HISTORY = 50;
 
-function loadHistory() {
+async function loadHistoryFromServer() {
   try {
-    const raw = localStorage.getItem("dgb_history");
-    return raw ? JSON.parse(raw) : [];
+    const res = await fetch("/api/history");
+    const data = await res.json();
+    return data.history || [];
   } catch {
     return [];
   }
 }
 
-function saveHistoryToStorage(history) {
+async function saveHistoryToServer(history) {
   try {
-    localStorage.setItem("dgb_history", JSON.stringify(history.slice(0, MAX_HISTORY)));
+    await fetch("/api/history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ history: history.slice(0, MAX_HISTORY) }),
+    });
   } catch {}
 }
 
@@ -39,7 +44,7 @@ export default function Home() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    setHistory(loadHistory());
+    loadHistoryFromServer().then(setHistory);
   }, []);
 
   useEffect(() => {
@@ -55,7 +60,7 @@ export default function Home() {
             ...updated[activeHistoryIndex],
             chat: chatMessages,
           };
-          saveHistoryToStorage(updated);
+          saveHistoryToServer(updated);
         }
         return updated;
       });
@@ -68,7 +73,7 @@ export default function Home() {
       if (activeHistoryIndex >= 0) {
         const updated = history.filter((_, i) => i !== activeHistoryIndex);
         setHistory(updated);
-        saveHistoryToStorage(updated);
+        saveHistoryToServer(updated);
         setActiveHistoryIndex(-1);
       }
       setIsBookmarked(false);
@@ -82,7 +87,7 @@ export default function Home() {
     };
     const updated = [entry, ...history.filter((h) => h.dutch !== dutchPhrase.trim())].slice(0, MAX_HISTORY);
     setHistory(updated);
-    saveHistoryToStorage(updated);
+    saveHistoryToServer(updated);
     setIsBookmarked(true);
     setActiveHistoryIndex(0);
   };
@@ -96,12 +101,12 @@ export default function Home() {
     }
     const updated = history.filter((_, i) => i !== index);
     setHistory(updated);
-    saveHistoryToStorage(updated);
+    saveHistoryToServer(updated);
   };
 
   const clearHistory = () => {
     setHistory([]);
-    saveHistoryToStorage([]);
+    saveHistoryToServer([]);
     setIsBookmarked(false);
     setActiveHistoryIndex(-1);
   };
