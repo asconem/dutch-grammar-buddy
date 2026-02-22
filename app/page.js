@@ -183,6 +183,7 @@ export default function Home() {
 
     setIsParsing(true);
     setParseError("");
+    setDutchPhrase("");
     setTranslation("");
     setChatMessages([]);
     setHasTranslated(false);
