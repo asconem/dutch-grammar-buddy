@@ -292,6 +292,11 @@ export default function Home() {
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #2a3a4a; border-radius: 3px; }
+        @media (max-width: 768px) {
+          .main-layout { flex-direction: column !important; padding: 0 16px 32px !important; }
+          .left-col { width: 100% !important; }
+          .right-col { min-height: auto !important; }
+        }
       `}</style>
 
       <div style={{
@@ -682,20 +687,6 @@ export default function Home() {
         </div>
 
         {/* Responsive styles */}
-        <style jsx global>{`
-          @media (max-width: 768px) {
-            .main-layout {
-              flex-direction: column !important;
-              padding: 0 16px 32px !important;
-            }
-            .left-col {
-              width: 100% !important;
-            }
-            .right-col {
-              min-height: auto !important;
-            }
-          }
-        `}</style>
       </div>
     </>
   );
