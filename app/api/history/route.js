@@ -9,18 +9,29 @@ async function kvGet(key) {
     headers: { Authorization: `Bearer ${KV_TOKEN}` },
   });
   const data = await res.json();
-  return data.result ? JSON.parse(data.result) : null;
+  if (data.result === null || data.result === undefined) return null;
+  try {
+    return typeof data.result === "string" ? JSON.parse(data.result) : data.result;
+  } catch {
+    return null;
+  }
 }
 
 async function kvSet(key, value) {
-  await fetch(`${KV_URL}/set/${key}`, {
+  const res = await fetch(`${KV_URL}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${KV_TOKEN}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(JSON.stringify(value)),
+    body: JSON.stringify(["SET", key, JSON.stringify(value)]),
   });
+  const data = await res.json();
+  if (data.error) {
+    console.error("KV SET error:", data.error);
+    throw new Error(data.error);
+  }
+  return data;
 }
 
 export async function GET() {
