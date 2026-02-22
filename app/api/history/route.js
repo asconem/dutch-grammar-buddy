@@ -36,10 +36,23 @@ export async function GET() {
 export async function POST(request) {
   try {
     const { history } = await request.json();
+    if (!Array.isArray(history)) {
+      return NextResponse.json({ error: "Invalid history format" }, { status: 400 });
+    }
     await kvSet(HISTORY_KEY, history);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("History save error:", err);
     return NextResponse.json({ error: "Failed to save history" }, { status: 500 });
+  }
+}
+
+export async function DELETE() {
+  try {
+    await kvSet(HISTORY_KEY, []);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("History clear error:", err);
+    return NextResponse.json({ error: "Failed to clear history" }, { status: 500 });
   }
 }

@@ -44,7 +44,16 @@ export default function Home() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    loadHistoryFromServer().then(setHistory);
+    // Clean up old localStorage data from previous versions
+    try { localStorage.removeItem("dgb_history"); } catch {}
+
+    loadHistoryFromServer().then((h) => {
+      if (Array.isArray(h)) {
+        setHistory(h);
+      } else {
+        setHistory([]);
+      }
+    }).catch(() => setHistory([]));
   }, []);
 
   useEffect(() => {
