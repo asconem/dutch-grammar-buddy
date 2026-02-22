@@ -13,7 +13,7 @@ export async function POST(request) {
 
     const message = await client.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 300,
+      max_tokens: 500,
       messages: [
         {
           role: "user",
@@ -28,7 +28,7 @@ export async function POST(request) {
             },
             {
               type: "text",
-              text: `This is a screenshot from Duolingo or a similar language learning app. Extract ONLY the Dutch text/phrase being taught or tested. Return just the Dutch phrase, nothing else — no quotes, no explanation, no English text, no UI labels. If there are multiple Dutch phrases, return the primary one being practiced. If you cannot find any Dutch text, respond with exactly: NO_DUTCH_FOUND`,
+              text: `This is a screenshot from Duolingo or a similar language learning app. Extract ALL Dutch phrases/sentences visible in the screenshot. Return each Dutch phrase on its own line, nothing else — no quotes, no explanation, no English text, no UI labels, no numbering, no bullet points. Just the raw Dutch phrases, one per line. If you cannot find any Dutch text, respond with exactly: NO_DUTCH_FOUND`,
             },
           ],
         },
@@ -47,7 +47,12 @@ export async function POST(request) {
       );
     }
 
-    return NextResponse.json({ phrase: extracted });
+    const phrases = extracted
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    return NextResponse.json({ phrases });
   } catch (err) {
     console.error("Screenshot parse error:", err);
 
