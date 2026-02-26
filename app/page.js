@@ -318,8 +318,8 @@ export default function Home() {
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #2a3a4a; border-radius: 3px; }
         @media (max-width: 768px) {
-          .main-layout { flex-direction: column !important; padding: 0 16px 32px !important; }
-          .left-col { width: 100% !important; }
+          .main-layout { flex-direction: column !important; padding: 0 16px 32px !important; height: auto !important; }
+          .left-col { width: 100% !important; overflow-y: visible !important; }
           .right-col {
             position: relative !important;
             top: auto !important;
@@ -340,9 +340,9 @@ export default function Home() {
         }} />
 
         {/* Header */}
-        <header style={{ textAlign: "center", padding: "24px 16px 20px", position: "relative", zIndex: 1 }}>
+        <header style={{ textAlign: "center", padding: "16px 16px 12px", position: "relative", zIndex: 1 }}>
           <div style={{
-            display: "flex", width: 40, height: 28, margin: "0 auto 10px",
+            display: "flex", width: 40, height: 28, margin: "0 auto 8px",
             borderRadius: 3, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
           }}>
             <div style={{ flex: 1, background: "#AE1C28" }} />
@@ -362,14 +362,14 @@ export default function Home() {
 
         {/* Main two-column layout */}
         <div style={{
-          display: "flex", flexDirection: "row", gap: 20, padding: "0 20px 32px",
+          display: "flex", flexDirection: "row", gap: 20, padding: "0 20px 16px",
           maxWidth: 1200, margin: "0 auto", position: "relative", zIndex: 1,
-          minHeight: "calc(100vh - 120px)",
+          height: "calc(100vh - 110px)",
         }}
           className="main-layout"
         >
           {/* LEFT COLUMN — Input, Screenshot picker, History, Translation */}
-          <div style={{ width: 360, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}
+          <div style={{ width: 360, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16, overflowY: "auto" }}
             className="left-col"
           >
             {/* Dutch Phrase Input */}
