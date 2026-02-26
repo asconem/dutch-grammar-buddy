@@ -40,9 +40,33 @@ export default function Home() {
   const [showScreenshotPicker, setShowScreenshotPicker] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [activeHistoryIndex, setActiveHistoryIndex] = useState(-1);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const phraseTextareaRef = useRef(null);
+
+  const speakPhrase = async () => {
+    if (!dutchPhrase.trim() || isSpeaking) return;
+    setIsSpeaking(true);
+    try {
+      const res = await fetch("/api/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: dutchPhrase.trim() }),
+      });
+      const data = await res.json();
+      if (data.audio) {
+        const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
+        audio.onended = () => setIsSpeaking(false);
+        audio.onerror = () => setIsSpeaking(false);
+        await audio.play();
+      } else {
+        setIsSpeaking(false);
+      }
+    } catch {
+      setIsSpeaking(false);
+    }
+  };
 
   // Auto-resize the Dutch phrase textarea
   useEffect(() => {
@@ -481,6 +505,22 @@ export default function Home() {
                   >
                     {isParsing ? <span style={{ display: "inline-block", animation: "spin 1s linear infinite", fontSize: 14 }}>⟳</span> : "📷"}
                   </button>
+                  {hasTranslated && (
+                    <button
+                      onClick={speakPhrase}
+                      disabled={isSpeaking}
+                      style={{
+                        width: 44, height: 44, borderRadius: 10, border: "1px solid #2A3A4A",
+                        background: isSpeaking ? "#2A3A4A" : "#1A2733", color: isSpeaking ? "#E87A2E" : "#7A8D9E",
+                        fontSize: 18, cursor: "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        transition: "all 0.2s",
+                      }}
+                      title="Hear pronunciation"
+                    >
+                      🔊
+                    </button>
+                  )}
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handleScreenshot} style={{ display: "none" }} />
                 </div>
               </div>
