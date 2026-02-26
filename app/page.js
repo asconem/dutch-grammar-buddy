@@ -66,9 +66,13 @@ export default function Home() {
     }).catch(() => setHistory([]));
   }, []);
 
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages, isThinking]);
+    if (shouldAutoScroll) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMessages, isThinking, shouldAutoScroll]);
 
   useEffect(() => {
     if (isBookmarked && activeHistoryIndex >= 0 && chatMessages.length > 0) {
@@ -131,6 +135,7 @@ export default function Home() {
   };
 
   const loadFromHistory = (entry) => {
+    setShouldAutoScroll(false);
     setDutchPhrase(entry.dutch);
     setTranslation(entry.english);
     setChatMessages(entry.chat || []);
@@ -249,6 +254,7 @@ export default function Home() {
 
   const askQuestion = async () => {
     if (!chatInput.trim() || !hasTranslated) return;
+    setShouldAutoScroll(true);
     const question = chatInput.trim();
     setChatInput("");
 
