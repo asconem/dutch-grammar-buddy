@@ -57,6 +57,9 @@ export default function Home() {
     // Clean up old localStorage data from previous versions
     try { localStorage.removeItem("dgb_history"); } catch {}
 
+    // Ensure page starts at top
+    window.scrollTo(0, 0);
+
     loadHistoryFromServer().then((h) => {
       if (Array.isArray(h)) {
         setHistory(h);
@@ -66,7 +69,7 @@ export default function Home() {
     }).catch(() => setHistory([]));
   }, []);
 
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(false);
 
   useEffect(() => {
     if (shouldAutoScroll) {
@@ -397,7 +400,8 @@ export default function Home() {
                         setParseError("");
                         setShowHistory(false);
                         setShowScreenshotPicker(false);
-                        setShouldAutoScroll(true);
+                        setShouldAutoScroll(false);
+                        window.scrollTo(0, 0);
                       }}
                       style={{
                         background: "transparent",
