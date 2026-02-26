@@ -42,6 +42,16 @@ export default function Home() {
   const [activeHistoryIndex, setActiveHistoryIndex] = useState(-1);
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const phraseTextareaRef = useRef(null);
+
+  // Auto-resize the Dutch phrase textarea
+  useEffect(() => {
+    const el = phraseTextareaRef.current;
+    if (el) {
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    }
+  }, [dutchPhrase]);
 
   useEffect(() => {
     // Clean up old localStorage data from previous versions
@@ -310,7 +320,13 @@ export default function Home() {
         @media (max-width: 768px) {
           .main-layout { flex-direction: column !important; padding: 0 16px 32px !important; }
           .left-col { width: 100% !important; }
-          .right-col { min-height: auto !important; }
+          .right-col {
+            position: relative !important;
+            top: auto !important;
+            align-self: auto !important;
+            height: auto !important;
+            max-height: none !important;
+          }
         }
       `}</style>
 
@@ -392,6 +408,7 @@ export default function Home() {
 
               <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                 <textarea
+                  ref={phraseTextareaRef}
                   rows={2}
                   placeholder="Type or paste a Dutch phrase…"
                   value={dutchPhrase}
@@ -401,7 +418,8 @@ export default function Home() {
                     flex: 1, background: "#1A2733", border: "1px solid #2A3A4A",
                     borderRadius: 10, padding: "10px 12px", fontSize: 15,
                     color: "#E0E8EF", fontFamily: "'DM Sans', sans-serif",
-                    resize: "none", lineHeight: 1.5,
+                    resize: "none", lineHeight: 1.5, overflow: "hidden",
+                    minHeight: 60,
                   }}
                 />
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -575,7 +593,11 @@ export default function Home() {
           </div>
 
           {/* RIGHT COLUMN — Grammar Chat (fills remaining space) */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}
+          <div style={{
+            flex: 1, display: "flex", flexDirection: "column", minWidth: 0,
+            position: "sticky", top: 20, alignSelf: "flex-start",
+            height: "calc(100vh - 140px)", maxHeight: "calc(100vh - 140px)",
+          }}
             className="right-col"
           >
             <div style={{
@@ -593,7 +615,8 @@ export default function Home() {
               flex: 1, display: "flex", flexDirection: "column",
               background: "#141E28", border: "1px solid #2A3A4A",
               borderRadius: "12px 12px 0 0",
-              minHeight: 400,
+              minHeight: 0,
+              overflow: "hidden",
             }}>
               <div style={{
                 flex: 1, padding: 16, overflowY: "auto",
