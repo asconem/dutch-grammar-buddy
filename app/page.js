@@ -318,7 +318,7 @@ export default function Home() {
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-        textarea:focus, button:focus-visible { outline: 2px solid #e87a2e; outline-offset: 2px; }
+        textarea:focus, button:focus-visible { outline: 2px solid #e87a2e; outline-offset: -1px; border-radius: 10px; }
         textarea::placeholder { color: #6b7b8d; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -385,6 +385,29 @@ export default function Home() {
                   Dutch Phrase
                 </label>
                 <div style={{ display: "flex", gap: 6 }}>
+                  {hasTranslated && (
+                    <button
+                      onClick={() => {
+                        setDutchPhrase("");
+                        setTranslation("");
+                        setChatMessages([]);
+                        setHasTranslated(false);
+                        setIsBookmarked(false);
+                        setActiveHistoryIndex(-1);
+                        setParseError("");
+                        setShowHistory(false);
+                        setShowScreenshotPicker(false);
+                        setShouldAutoScroll(true);
+                      }}
+                      style={{
+                        background: "transparent",
+                        border: "1px solid #2A3A4A", borderRadius: 6, padding: "3px 8px",
+                        fontSize: 10, color: "#E87A2E", cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                      }}
+                    >
+                      + New
+                    </button>
+                  )}
                   {screenshotPhrases.length > 1 && (
                     <button
                       onClick={() => { setShowScreenshotPicker(!showScreenshotPicker); setShowHistory(false); }}
