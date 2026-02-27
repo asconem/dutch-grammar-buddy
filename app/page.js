@@ -481,7 +481,7 @@ export default function Home() {
                   )}
                   {history.length > 0 && (
                     <button
-                      onClick={() => { setShowHistory(!showHistory); setShowScreenshotPicker(false); }}
+                      onClick={() => { setShowHistory(!showHistory); setShowScreenshotPicker(false); if (!showHistory) setShowBreakdown(false); }}
                       style={{
                         background: showHistory ? "#2A3A4A" : "transparent",
                         border: "1px solid #2A3A4A", borderRadius: 6, padding: "3px 8px",
@@ -699,7 +699,11 @@ export default function Home() {
             {hasTranslated && (breakdown || isLoadingBreakdown) && (
               <section>
                 <button
-                  onClick={() => setShowBreakdown(!showBreakdown)}
+                  onClick={() => {
+                    const next = !showBreakdown;
+                    setShowBreakdown(next);
+                    if (next) setShowHistory(false);
+                  }}
                   style={{
                     background: "transparent", border: "none", padding: "4px 0",
                     fontSize: 11, fontWeight: 600, textTransform: "uppercase",
