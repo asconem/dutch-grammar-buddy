@@ -576,14 +576,6 @@ export default function Home() {
 
       {/* Main App — only shown when logged in */}
       {currentUser && currentUser !== "login" && (
-            position: relative !important;
-            top: auto !important;
-            align-self: auto !important;
-            height: auto !important;
-            max-height: none !important;
-          }
-        }
-      `}</style>
 
       <div style={{
         minHeight: "100vh", background: "#0F1923", color: "#E0E8EF",
