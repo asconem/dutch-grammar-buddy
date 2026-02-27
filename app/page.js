@@ -437,7 +437,7 @@ export default function Home() {
             {/* Dutch Phrase Input */}
             <section>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#7A8D9E" }}>
+                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#E87A2E" }}>
                   Dutch Phrase
                 </label>
                 <div style={{ display: "flex", gap: 6 }}>
@@ -607,7 +607,7 @@ export default function Home() {
             {/* Translation + Bookmark */}
             <section>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#7A8D9E" }}>
+                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#E87A2E" }}>
                   English Translation
                 </label>
                 {hasTranslated && (
@@ -769,7 +769,7 @@ export default function Home() {
               display: "flex", alignItems: "center", gap: 12, marginBottom: 12,
             }}>
               <div style={{ flex: 1, height: 1, background: "#2A3A4A" }} />
-              <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#5A6A7A" }}>
+              <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#E87A2E" }}>
                 Grammar Chat
               </span>
               <div style={{ flex: 1, height: 1, background: "#2A3A4A" }} />
