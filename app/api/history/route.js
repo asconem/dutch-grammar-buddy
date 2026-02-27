@@ -1,8 +1,18 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 const KV_URL = process.env.KV_REST_API_URL;
 const KV_TOKEN = process.env.KV_REST_API_TOKEN;
-const HISTORY_KEY = "dgb:history";
+
+function getHistoryKey(user) {
+  return `dgb:history:${user}`;
+}
+
+function getUser() {
+  const cookieStore = cookies();
+  const user = cookieStore.get("dgb_user")?.value;
+  return user || null;
+}
 
 async function kvGet(key) {
   const res = await fetch(`${KV_URL}/get/${key}`, {
@@ -36,7 +46,11 @@ async function kvSet(key, value) {
 
 export async function GET() {
   try {
-    const history = await kvGet(HISTORY_KEY);
+    const user = getUser();
+    if (!user || user === "guest") {
+      return NextResponse.json({ history: [] });
+    }
+    const history = await kvGet(getHistoryKey(user));
     return NextResponse.json({ history: history || [] });
   } catch (err) {
     console.error("History load error:", err);
@@ -46,11 +60,15 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const user = getUser();
+    if (!user || user === "guest") {
+      return NextResponse.json({ error: "Guests cannot save" }, { status: 403 });
+    }
     const { history } = await request.json();
     if (!Array.isArray(history)) {
       return NextResponse.json({ error: "Invalid history format" }, { status: 400 });
     }
-    await kvSet(HISTORY_KEY, history);
+    await kvSet(getHistoryKey(user), history);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("History save error:", err);
@@ -60,7 +78,11 @@ export async function POST(request) {
 
 export async function DELETE() {
   try {
-    await kvSet(HISTORY_KEY, []);
+    const user = getUser();
+    if (!user || user === "guest") {
+      return NextResponse.json({ error: "Guests cannot modify history" }, { status: 403 });
+    }
+    await kvSet(getHistoryKey(user), []);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("History clear error:", err);

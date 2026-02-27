@@ -25,6 +25,11 @@ async function saveHistoryToServer(history) {
 }
 
 export default function Home() {
+  const [currentUser, setCurrentUser] = useState(null); // null = checking, "login" = show login screen
+  const [loginError, setLoginError] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [dutchPhrase, setDutchPhrase] = useState("");
   const [translation, setTranslation] = useState("");
   const [isTranslating, setIsTranslating] = useState(false);
@@ -47,6 +52,69 @@ export default function Home() {
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const phraseTextareaRef = useRef(null);
+
+  const isGuest = currentUser === "guest";
+
+  // Check for existing login cookie on mount
+  useEffect(() => {
+    const cookie = document.cookie.split("; ").find((c) => c.startsWith("dgb_user="));
+    if (cookie) {
+      setCurrentUser(cookie.split("=")[1]);
+    } else {
+      setCurrentUser("login");
+    }
+  }, []);
+
+  const handleLogin = async (user) => {
+    if (user === "guest") {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: "guest" }),
+      });
+      if (res.ok) setCurrentUser("guest");
+      return;
+    }
+    setSelectedUser(user);
+    setLoginPassword("");
+    setLoginError("");
+  };
+
+  const submitPassword = async () => {
+    if (!loginPassword.trim()) return;
+    setIsLoggingIn(true);
+    setLoginError("");
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: selectedUser, password: loginPassword }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCurrentUser(selectedUser);
+      } else {
+        setLoginError(data.error || "Login failed");
+      }
+    } catch {
+      setLoginError("Login failed. Please try again.");
+    }
+    setIsLoggingIn(false);
+  };
+
+  const handleLogout = () => {
+    document.cookie = "dgb_user=; path=/; max-age=0";
+    setCurrentUser("login");
+    setSelectedUser(null);
+    setLoginPassword("");
+    setHistory([]);
+    setDutchPhrase("");
+    setTranslation("");
+    setChatMessages([]);
+    setHasTranslated(false);
+    setIsBookmarked(false);
+    setBreakdown(null);
+  };
 
   const speakPhrase = async () => {
     if (!dutchPhrase.trim() || isSpeaking) return;
@@ -104,14 +172,20 @@ export default function Home() {
     // Ensure page starts at top
     window.scrollTo(0, 0);
 
-    loadHistoryFromServer().then((h) => {
-      if (Array.isArray(h)) {
-        setHistory(h);
-      } else {
-        setHistory([]);
+    if (currentUser && currentUser !== "login" && currentUser !== "guest") {
+      // One-time migration of old shared history to matt's namespace
+      if (currentUser === "matt") {
+        fetch("/api/migrate", { method: "POST" }).catch(() => {});
       }
-    }).catch(() => setHistory([]));
-  }, []);
+      loadHistoryFromServer().then((h) => {
+        if (Array.isArray(h)) {
+          setHistory(h);
+        } else {
+          setHistory([]);
+        }
+      }).catch(() => setHistory([]));
+    }
+  }, [currentUser]);
 
   const [shouldAutoScroll, setShouldAutoScroll] = useState(false);
 
@@ -392,6 +466,125 @@ export default function Home() {
         }
       `}</style>
 
+      {/* Login Screen */}
+      {(!currentUser || currentUser === "login") && (
+        <div style={{
+          minHeight: "100vh", background: "#0F1923", color: "#E0E8EF",
+          fontFamily: "'DM Sans', sans-serif", display: "flex", alignItems: "center",
+          justifyContent: "center",
+        }}>
+          <div style={{
+            position: "fixed", inset: 0, pointerEvents: "none",
+            background: "radial-gradient(ellipse at 20% 0%, rgba(232,122,46,0.06) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(33,70,139,0.08) 0%, transparent 60%)",
+          }} />
+          <div style={{
+            textAlign: "center", position: "relative", zIndex: 1,
+            animation: "fadeIn 0.3s ease-out",
+          }}>
+            <div style={{
+              display: "flex", width: 48, height: 34, margin: "0 auto 14px",
+              borderRadius: 3, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+            }}>
+              <div style={{ flex: 1, background: "#AE1C28" }} />
+              <div style={{ flex: 1, background: "#FFF" }} />
+              <div style={{ flex: 1, background: "#21468B" }} />
+            </div>
+            <h1 style={{
+              fontFamily: "'Fraunces', serif", fontSize: 28,
+              fontWeight: 700, color: "#F5F5F0", letterSpacing: "-0.02em", marginBottom: 4,
+            }}>
+              Dutch Grammar Buddy
+            </h1>
+            <p style={{ fontSize: 13, color: "#7A8D9E", marginBottom: 32 }}>
+              Choose your profile to get started.
+            </p>
+
+            {!selectedUser ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, width: 220, margin: "0 auto" }}>
+                {["Matt", "Tuz"].map((name) => (
+                  <button key={name} onClick={() => handleLogin(name.toLowerCase())}
+                    style={{
+                      padding: "12px 20px", borderRadius: 10, border: "1px solid #2A3A4A",
+                      background: "#1A2733", color: "#E0E8EF", fontSize: 16, fontWeight: 600,
+                      cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                      transition: "all 0.15s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#2A3A4A"; e.currentTarget.style.borderColor = "#E87A2E"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "#1A2733"; e.currentTarget.style.borderColor = "#2A3A4A"; }}
+                  >
+                    {name}
+                  </button>
+                ))}
+                <button onClick={() => handleLogin("guest")}
+                  style={{
+                    padding: "12px 20px", borderRadius: 10, border: "1px solid #1E2D3D",
+                    background: "transparent", color: "#5A6A7A", fontSize: 14,
+                    cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                    transition: "all 0.15s", marginTop: 6,
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "#7A8D9E"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = "#5A6A7A"; }}
+                >
+                  Continue as Guest
+                </button>
+              </div>
+            ) : (
+              <div style={{ width: 220, margin: "0 auto", animation: "fadeIn 0.2s ease-out" }}>
+                <p style={{ fontSize: 14, color: "#E0E8EF", marginBottom: 12 }}>
+                  Welcome back, <span style={{ color: "#E87A2E", fontWeight: 600 }}>{selectedUser.charAt(0).toUpperCase() + selectedUser.slice(1)}</span>
+                </p>
+                <input
+                  type="password"
+                  placeholder="Enter password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") submitPassword(); }}
+                  autoFocus
+                  style={{
+                    width: "100%", padding: "10px 12px", borderRadius: 10,
+                    border: loginError ? "1px solid #AE1C28" : "1px solid #2A3A4A",
+                    background: "#1A2733", color: "#E0E8EF", fontSize: 15,
+                    fontFamily: "'DM Sans', sans-serif", marginBottom: 8,
+                  }}
+                />
+                {loginError && (
+                  <p style={{ fontSize: 12, color: "#AE1C28", marginBottom: 8 }}>{loginError}</p>
+                )}
+                <button onClick={submitPassword} disabled={isLoggingIn}
+                  style={{
+                    width: "100%", padding: "10px 20px", borderRadius: 10, border: "none",
+                    background: "#E87A2E", color: "#FFF", fontSize: 15, fontWeight: 600,
+                    cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                    opacity: isLoggingIn ? 0.6 : 1, marginBottom: 10,
+                  }}
+                >
+                  {isLoggingIn ? "Logging in…" : "Log In"}
+                </button>
+                <button onClick={() => { setSelectedUser(null); setLoginError(""); }}
+                  style={{
+                    background: "transparent", border: "none", color: "#5A6A7A",
+                    fontSize: 12, cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                  }}
+                >
+                  ← Back
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Main App — only shown when logged in */}
+      {currentUser && currentUser !== "login" && (
+            position: relative !important;
+            top: auto !important;
+            align-self: auto !important;
+            height: auto !important;
+            max-height: none !important;
+          }
+        }
+      `}</style>
+
       <div style={{
         minHeight: "100vh", background: "#0F1923", color: "#E0E8EF",
         fontFamily: "'DM Sans', sans-serif", position: "relative",
@@ -420,6 +613,17 @@ export default function Home() {
           <p style={{ fontSize: 13, color: "#7A8D9E" }}>
             Paste a phrase, upload a screenshot, or tap history. Then ask why.
           </p>
+          <div style={{ marginTop: 6, fontSize: 11, color: "#4A5A6A" }}>
+            <span>{isGuest ? "Guest" : currentUser?.charAt(0).toUpperCase() + currentUser?.slice(1)}</span>
+            <span style={{ margin: "0 6px" }}>·</span>
+            <button onClick={handleLogout}
+              style={{
+                background: "transparent", border: "none", color: "#4A5A6A",
+                fontSize: 11, cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                textDecoration: "underline",
+              }}
+            >Log out</button>
+          </div>
         </header>
 
         {/* Main two-column layout */}
@@ -479,7 +683,7 @@ export default function Home() {
                       📷 Phrases ({screenshotPhrases.length})
                     </button>
                   )}
-                  {history.length > 0 && (
+                  {history.length > 0 && !isGuest && (
                     <button
                       onClick={() => { setShowHistory(!showHistory); setShowScreenshotPicker(false); if (!showHistory) setShowBreakdown(false); }}
                       style={{
@@ -610,7 +814,7 @@ export default function Home() {
                 <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#E87A2E" }}>
                   English Translation
                 </label>
-                {hasTranslated && (
+                {hasTranslated && !isGuest && (
                   <button onClick={bookmarkCurrent}
                     style={{
                       background: "transparent", border: isBookmarked ? "1px solid #E87A2E" : "1px solid #2A3A4A",
@@ -891,6 +1095,7 @@ export default function Home() {
 
         {/* Responsive styles */}
       </div>
+      )}
     </>
   );
 }
