@@ -603,62 +603,6 @@ export default function Home() {
               </section>
             )}
 
-            {/* History Panel */}
-            {showHistory && (
-              <section style={{
-                background: "#141E28", border: "1px solid #2A3A4A", borderRadius: 12,
-                overflow: "hidden", animation: "fadeIn 0.2s ease-out",
-              }}>
-                <div style={{
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                  padding: "10px 12px", borderBottom: "1px solid #2A3A4A",
-                }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: "#7A8D9E", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                    Saved Phrases
-                  </span>
-                  <button onClick={clearHistory}
-                    style={{ background: "transparent", border: "none", fontSize: 10, color: "#5A6A7A", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
-                    Clear all
-                  </button>
-                </div>
-                <div style={{ maxHeight: 300, overflowY: "auto" }}>
-                  {history.map((entry, i) => (
-                    <div key={i}
-                      style={{
-                        display: "flex", alignItems: "center", padding: "9px 12px",
-                        borderBottom: i < history.length - 1 ? "1px solid #1E2D3D" : "none",
-                        cursor: "pointer", transition: "background 0.15s",
-                      }}
-                      onClick={() => loadFromHistory(entry)}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "#1A2733")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                    >
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, color: "#E0E8EF", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {entry.dutch}
-                        </div>
-                        <div style={{ fontSize: 11, color: "#5A6A7A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 1 }}>
-                          {entry.english}
-                        </div>
-                        {entry.chat && entry.chat.length > 0 && (
-                          <div style={{ fontSize: 10, color: "#3E4E5E", marginTop: 2 }}>
-                            💬 {entry.chat.length} msg{entry.chat.length !== 1 ? "s" : ""}
-                          </div>
-                        )}
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: 8, flexShrink: 0 }}>
-                        <span style={{ fontSize: 10, color: "#3E4E5E" }}>{formatDate(entry.timestamp)}</span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); removeFromHistory(i); }}
-                          style={{ background: "transparent", border: "none", color: "#3E4E5E", fontSize: 13, cursor: "pointer", padding: "2px 4px", lineHeight: 1 }}
-                          title="Remove"
-                        >×</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
 
             {/* Translation + Bookmark */}
             <section>
@@ -752,6 +696,63 @@ export default function Home() {
                     )}
                   </div>
                 )}
+              </section>
+            )}
+
+            {/* History Panel */}
+            {showHistory && (
+              <section style={{
+                background: "#141E28", border: "1px solid #2A3A4A", borderRadius: 12,
+                overflow: "hidden", animation: "fadeIn 0.2s ease-out",
+              }}>
+                <div style={{
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                  padding: "10px 12px", borderBottom: "1px solid #2A3A4A",
+                }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "#7A8D9E", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                    Saved Phrases
+                  </span>
+                  <button onClick={clearHistory}
+                    style={{ background: "transparent", border: "none", fontSize: 10, color: "#5A6A7A", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                    Clear all
+                  </button>
+                </div>
+                <div style={{ maxHeight: 300, overflowY: "auto" }}>
+                  {history.map((entry, i) => (
+                    <div key={i}
+                      style={{
+                        display: "flex", alignItems: "center", padding: "9px 12px",
+                        borderBottom: i < history.length - 1 ? "1px solid #1E2D3D" : "none",
+                        cursor: "pointer", transition: "background 0.15s",
+                      }}
+                      onClick={() => loadFromHistory(entry)}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "#1A2733")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, color: "#E0E8EF", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {entry.dutch}
+                        </div>
+                        <div style={{ fontSize: 11, color: "#5A6A7A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 1 }}>
+                          {entry.english}
+                        </div>
+                        {entry.chat && entry.chat.length > 0 && (
+                          <div style={{ fontSize: 10, color: "#3E4E5E", marginTop: 2 }}>
+                            💬 {entry.chat.length} msg{entry.chat.length !== 1 ? "s" : ""}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: 8, flexShrink: 0 }}>
+                        <span style={{ fontSize: 10, color: "#3E4E5E" }}>{formatDate(entry.timestamp)}</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removeFromHistory(i); }}
+                          style={{ background: "transparent", border: "none", color: "#3E4E5E", fontSize: 13, cursor: "pointer", padding: "2px 4px", lineHeight: 1 }}
+                          title="Remove"
+                        >×</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </section>
             )}
           </div>
