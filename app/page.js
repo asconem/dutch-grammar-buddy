@@ -41,6 +41,9 @@ export default function Home() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [activeHistoryIndex, setActiveHistoryIndex] = useState(-1);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [breakdown, setBreakdown] = useState(null);
+  const [showBreakdown, setShowBreakdown] = useState(false);
+  const [isLoadingBreakdown, setIsLoadingBreakdown] = useState(false);
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const phraseTextareaRef = useRef(null);
@@ -66,6 +69,23 @@ export default function Home() {
     } catch {
       setIsSpeaking(false);
     }
+  };
+
+  const fetchBreakdown = async (phrase, trans) => {
+    setIsLoadingBreakdown(true);
+    setBreakdown(null);
+    try {
+      const res = await fetch("/api/breakdown", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phrase, translation: trans }),
+      });
+      const data = await res.json();
+      if (data.breakdown) {
+        setBreakdown(data.breakdown);
+      }
+    } catch {}
+    setIsLoadingBreakdown(false);
   };
 
   // Auto-resize the Dutch phrase textarea
@@ -169,8 +189,11 @@ export default function Home() {
     setHasTranslated(true);
     setShowHistory(false);
     setIsBookmarked(true);
+    setBreakdown(null);
+    setShowBreakdown(false);
     const idx = history.findIndex((h) => h.dutch === entry.dutch && h.timestamp === entry.timestamp);
     setActiveHistoryIndex(idx);
+    fetchBreakdown(entry.dutch, entry.english);
   };
 
   const translatePhrase = async () => {
@@ -182,6 +205,8 @@ export default function Home() {
     setIsBookmarked(false);
     setActiveHistoryIndex(-1);
     setParseError("");
+    setBreakdown(null);
+    setShowBreakdown(false);
 
     try {
       const res = await fetch("/api/translate", {
@@ -195,6 +220,7 @@ export default function Home() {
       } else {
         setTranslation(data.translation || "Translation failed.");
         setHasTranslated(true);
+        fetchBreakdown(dutchPhrase.trim(), data.translation);
       }
     } catch {
       setTranslation("Translation error. Please try again.");
@@ -211,6 +237,8 @@ export default function Home() {
     setIsBookmarked(false);
     setActiveHistoryIndex(-1);
     setParseError("");
+    setBreakdown(null);
+    setShowBreakdown(false);
     setIsTranslating(true);
 
     try {
@@ -225,6 +253,7 @@ export default function Home() {
       } else {
         setTranslation(data.translation || "Translation failed.");
         setHasTranslated(true);
+        fetchBreakdown(phrase, data.translation);
       }
     } catch {
       setTranslation("Translation error. Please try again.");
@@ -425,6 +454,8 @@ export default function Home() {
                         setShowHistory(false);
                         setShowScreenshotPicker(false);
                         setShouldAutoScroll(false);
+                        setBreakdown(null);
+                        setShowBreakdown(false);
                         window.scrollTo(0, 0);
                       }}
                       style={{
@@ -663,6 +694,62 @@ export default function Home() {
                 )}
               </div>
             </section>
+
+            {/* Word Breakdown — collapsible */}
+            {hasTranslated && (breakdown || isLoadingBreakdown) && (
+              <section>
+                <button
+                  onClick={() => setShowBreakdown(!showBreakdown)}
+                  style={{
+                    background: "transparent", border: "none", padding: "4px 0",
+                    fontSize: 11, fontWeight: 600, textTransform: "uppercase",
+                    letterSpacing: "0.08em", color: "#5A6A7A", cursor: "pointer",
+                    fontFamily: "'DM Sans', sans-serif", display: "flex", alignItems: "center", gap: 6,
+                  }}
+                >
+                  <span style={{
+                    display: "inline-block", transition: "transform 0.2s",
+                    transform: showBreakdown ? "rotate(90deg)" : "rotate(0deg)",
+                    fontSize: 10,
+                  }}>▶</span>
+                  Word Breakdown
+                </button>
+                {showBreakdown && (
+                  <div style={{
+                    background: "#141E28", border: "1px solid #2A3A4A", borderRadius: 10,
+                    padding: "12px", marginTop: 6, overflowX: "auto",
+                    animation: "fadeIn 0.2s ease-out",
+                  }}>
+                    {isLoadingBreakdown ? (
+                      <span style={{ color: "#5A6A7A", fontSize: 12, fontStyle: "italic" }}>Analyzing…</span>
+                    ) : breakdown && (
+                      <div style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+                        {breakdown.map((word, i) => (
+                          <div key={i} style={{
+                            display: "flex", flexDirection: "column", alignItems: "center",
+                            padding: "6px 8px", minWidth: 0,
+                          }}>
+                            <span style={{ fontSize: 15, fontWeight: 600, color: "#E87A2E", whiteSpace: "nowrap" }}>
+                              {word.dutch}
+                            </span>
+                            <span style={{ fontSize: 12, color: "#8BA4B8", fontStyle: "italic", marginTop: 2, whiteSpace: "nowrap" }}>
+                              {word.english}
+                            </span>
+                            <span style={{
+                              fontSize: 9, fontWeight: 600, color: "#4A5A6A", marginTop: 3,
+                              background: "#1A2733", borderRadius: 3, padding: "1px 5px",
+                              letterSpacing: "0.05em", whiteSpace: "nowrap",
+                            }}>
+                              {word.pos}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </section>
+            )}
           </div>
 
           {/* RIGHT COLUMN — Grammar Chat (fills remaining space) */}
