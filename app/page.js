@@ -412,6 +412,37 @@ export default function Home() {
     setIsThinking(false);
   };
 
+  const askPreset = (question) => {
+    if (!hasTranslated || isThinking) return;
+    setChatInput(question);
+    setTimeout(() => {
+      setChatInput("");
+      setShouldAutoScroll(true);
+      const newMessages = [...chatMessages, { role: "user", content: question }];
+      setChatMessages(newMessages);
+      setIsThinking(true);
+      fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dutchPhrase: dutchPhrase.trim(), translation, messages: newMessages }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          setChatMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: data.error || data.response || "Sorry, couldn't generate a response." },
+          ]);
+        })
+        .catch(() => {
+          setChatMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: "Error getting response. Please try again." },
+          ]);
+        })
+        .finally(() => setIsThinking(false));
+    }, 0);
+  };
+
   const handleTranslateKey = (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); translatePhrase(); }
   };
@@ -991,10 +1022,22 @@ export default function Home() {
                   }}>
                     {hasTranslated ? (
                       <>
-                        <span style={{ fontSize: 32, marginBottom: 4 }}>💬</span>
-                        <span>Ask anything about this phrase&apos;s grammar, word choice, or structure.</span>
-                        <span style={{ fontSize: 12, color: "#3E4E5E", fontStyle: "italic", marginTop: 4 }}>
-                          e.g. &quot;Why is &apos;het&apos; used here instead of &apos;de&apos;?&quot;
+                        <button
+                          onClick={() => askPreset("Break down this sentence — explain the word order, verb conjugation, and any grammar rules an English speaker should know.")}
+                          style={{
+                            background: "transparent", border: "1px solid #E87A2E",
+                            borderRadius: 10, padding: "10px 20px", fontSize: 14,
+                            fontWeight: 600, color: "#E87A2E", cursor: "pointer",
+                            fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s",
+                            marginBottom: 8,
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "#E87A2E"; e.currentTarget.style.color = "#FFF"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#E87A2E"; }}
+                        >
+                          Explain this
+                        </button>
+                        <span style={{ fontSize: 12, color: "#3E4E5E" }}>
+                          or ask your own question below
                         </span>
                       </>
                     ) : (
