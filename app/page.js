@@ -200,10 +200,6 @@ export default function Home() {
     window.scrollTo(0, 0);
 
     if (currentUser && currentUser !== "login" && currentUser !== "guest") {
-      // One-time migration of old shared history to matt's namespace
-      if (currentUser === "matt") {
-        fetch("/api/migrate", { method: "POST" }).catch(() => {});
-      }
       loadHistoryFromServer().then((h) => {
         if (Array.isArray(h)) {
           setHistory(h);
@@ -353,11 +349,6 @@ export default function Home() {
     setIsParsing(true);
     setParseError("");
     setDutchPhrase("");
-    setTranslation("");
-    setChatMessages([]);
-    setHasTranslated(false);
-    setIsBookmarked(false);
-    setActiveHistoryIndex(-1);
     setScreenshotPhrases([]);
     setShowScreenshotPicker(false);
 
@@ -392,11 +383,9 @@ export default function Home() {
     setIsParsing(false);
   };
 
-  const askQuestion = async () => {
-    if (!chatInput.trim() || !hasTranslated) return;
+  const sendChat = async (question) => {
+    if (!hasTranslated || isThinking) return;
     setShouldAutoScroll(true);
-    const question = chatInput.trim();
-    setChatInput("");
 
     const newMessages = [...chatMessages, { role: "user", content: question }];
     setChatMessages(newMessages);
@@ -422,35 +411,15 @@ export default function Home() {
     setIsThinking(false);
   };
 
+  const askQuestion = () => {
+    if (!chatInput.trim()) return;
+    const question = chatInput.trim();
+    setChatInput("");
+    sendChat(question);
+  };
+
   const askPreset = (question) => {
-    if (!hasTranslated || isThinking) return;
-    setChatInput(question);
-    setTimeout(() => {
-      setChatInput("");
-      setShouldAutoScroll(true);
-      const newMessages = [...chatMessages, { role: "user", content: question }];
-      setChatMessages(newMessages);
-      setIsThinking(true);
-      fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dutchPhrase: dutchPhrase.trim(), translation, messages: newMessages }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          setChatMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: data.error || data.response || "Sorry, couldn't generate a response." },
-          ]);
-        })
-        .catch(() => {
-          setChatMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: "Error getting response. Please try again." },
-          ]);
-        })
-        .finally(() => setIsThinking(false));
-    }, 0);
+    sendChat(question);
   };
 
   const handleTranslateKey = (e) => {
