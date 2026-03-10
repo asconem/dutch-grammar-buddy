@@ -451,7 +451,7 @@ export default function Home() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); askQuestion(); }
   };
 
-  const renderText = (text) => {
+  const renderInline = (text) => {
     const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
     return parts.map((part, i) => {
       if (part.startsWith("**") && part.endsWith("**"))
@@ -460,6 +460,70 @@ export default function Home() {
         return <em key={i} style={{ color: "#8BA4B8" }}>{part.slice(1, -1)}</em>;
       return part;
     });
+  };
+
+  const renderMarkdown = (content) => {
+    const lines = content.split("\n");
+    const elements = [];
+    let i = 0;
+
+    while (i < lines.length) {
+      const line = lines[i];
+
+      // Headers: ## or ###
+      if (/^#{2,3}\s+/.test(line)) {
+        const text = line.replace(/^#{2,3}\s+/, "");
+        elements.push(
+          <div key={i} style={{ fontSize: 13, fontWeight: 700, color: "#E87A2E", marginTop: elements.length > 0 ? 12 : 0, marginBottom: 4 }}>
+            {renderInline(text)}
+          </div>
+        );
+        i++;
+        continue;
+      }
+
+      // Bullet lines: - or – or •
+      if (/^[\-–•]\s+/.test(line)) {
+        const bullets = [];
+        while (i < lines.length && /^[\-–•]\s+/.test(lines[i])) {
+          bullets.push(lines[i].replace(/^[\-–•]\s+/, ""));
+          i++;
+        }
+        elements.push(
+          <ul key={`ul-${i}`} style={{ margin: "4px 0", paddingLeft: 20, listStyleType: "disc" }}>
+            {bullets.map((b, j) => (
+              <li key={j} style={{ marginBottom: 2 }}>{renderInline(b)}</li>
+            ))}
+          </ul>
+        );
+        continue;
+      }
+
+      // Numbered lists: 1. 2. etc
+      if (/^\d+\.\s+/.test(line)) {
+        const items = [];
+        while (i < lines.length && /^\d+\.\s+/.test(lines[i])) {
+          items.push(lines[i].replace(/^\d+\.\s+/, ""));
+          i++;
+        }
+        elements.push(
+          <ol key={`ol-${i}`} style={{ margin: "4px 0", paddingLeft: 20 }}>
+            {items.map((item, j) => (
+              <li key={j} style={{ marginBottom: 2 }}>{renderInline(item)}</li>
+            ))}
+          </ol>
+        );
+        continue;
+      }
+
+      // Regular paragraph
+      elements.push(
+        <p key={i} style={{ margin: elements.length > 0 ? "8px 0 0" : 0 }}>{renderInline(line)}</p>
+      );
+      i++;
+    }
+
+    return elements;
   };
 
   const formatDate = (timestamp) => {
@@ -1068,8 +1132,8 @@ export default function Home() {
                       }}>Grammar Buddy</div>
                     )}
                     <div style={{ color: msg.role === "user" ? "#FFF" : "#D0D8E0" }}>
-                      {msg.content.split("\n").map((line, j) => (
-                        <p key={j} style={{ margin: j === 0 ? 0 : "8px 0 0" }}>{renderText(line)}</p>
+                      {msg.role === "assistant" ? renderMarkdown(msg.content) : msg.content.split("\n").map((line, j) => (
+                        <p key={j} style={{ margin: j === 0 ? 0 : "8px 0 0" }}>{line}</p>
                       ))}
                     </div>
                   </div>
