@@ -46,6 +46,7 @@ export default function Home() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [activeHistoryIndex, setActiveHistoryIndex] = useState(-1);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speakingWordIndex, setSpeakingWordIndex] = useState(-1);
   const [breakdown, setBreakdown] = useState(null);
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [isLoadingBreakdown, setIsLoadingBreakdown] = useState(false);
@@ -136,6 +137,32 @@ export default function Home() {
       }
     } catch {
       setIsSpeaking(false);
+    }
+  };
+
+  const speakWord = async (word, index) => {
+    if (isSpeaking) return;
+    setIsSpeaking(true);
+    setSpeakingWordIndex(index);
+    try {
+      const res = await fetch("/api/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: word }),
+      });
+      const data = await res.json();
+      if (data.audio) {
+        const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
+        audio.onended = () => { setIsSpeaking(false); setSpeakingWordIndex(-1); };
+        audio.onerror = () => { setIsSpeaking(false); setSpeakingWordIndex(-1); };
+        await audio.play();
+      } else {
+        setIsSpeaking(false);
+        setSpeakingWordIndex(-1);
+      }
+    } catch {
+      setIsSpeaking(false);
+      setSpeakingWordIndex(-1);
     }
   };
 
@@ -964,11 +991,23 @@ export default function Home() {
                     ) : breakdown && (
                       <div style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
                         {breakdown.map((word, i) => (
-                          <div key={i} style={{
-                            display: "flex", flexDirection: "column", alignItems: "center",
-                            padding: "6px 8px", minWidth: 0,
-                          }}>
-                            <span style={{ fontSize: 15, fontWeight: 600, color: "#E87A2E", whiteSpace: "nowrap" }}>
+                          <div key={i}
+                            onClick={() => speakWord(word.dutch, i)}
+                            style={{
+                              display: "flex", flexDirection: "column", alignItems: "center",
+                              padding: "6px 8px", minWidth: 0, cursor: "pointer",
+                              borderRadius: 6, transition: "background 0.15s",
+                              background: speakingWordIndex === i ? "#1A2733" : "transparent",
+                            }}
+                            onMouseEnter={(e) => { if (speakingWordIndex !== i) e.currentTarget.style.background = "#1A2733"; }}
+                            onMouseLeave={(e) => { if (speakingWordIndex !== i) e.currentTarget.style.background = "transparent"; }}
+                            title={`Hear "${word.dutch}"`}
+                          >
+                            <span style={{
+                              fontSize: 15, fontWeight: 600, whiteSpace: "nowrap",
+                              color: speakingWordIndex === i ? "#FFF" : "#E87A2E",
+                              transition: "color 0.15s",
+                            }}>
                               {word.dutch}
                             </span>
                             <span style={{ fontSize: 12, color: "#8BA4B8", fontStyle: "italic", marginTop: 2, whiteSpace: "nowrap" }}>
