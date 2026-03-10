@@ -1,9 +1,4 @@
-export const dynamic = "force-dynamic";
-
-import Anthropic from "@anthropic-ai/sdk";
-import { NextResponse } from "next/server";
-
-const client = new Anthropic();
+export const runtime = "edge";
 
 const SYSTEM_PROMPT = `You are a Dutch language grammar tutor helping an English speaker who is learning Dutch via Duolingo. You explain grammar rules, word choice, sentence structure, and usage patterns clearly and practically.
 
@@ -23,13 +18,12 @@ export async function POST(request) {
     const { dutchPhrase, translation, messages } = await request.json();
 
     if (!dutchPhrase?.trim() || !messages?.length) {
-      return NextResponse.json(
+      return Response.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    // Build the API messages with context baked into the first user message
     const contextPrefix = `[Context — Dutch phrase: "${dutchPhrase.trim()}" | English translation: "${translation}"]\n\n`;
 
     const apiMessages = messages.map((msg, i) => ({
@@ -37,29 +31,70 @@ export async function POST(request) {
       content: i === 0 && msg.role === "user" ? contextPrefix + msg.content : msg.content,
     }));
 
-    const stream = client.messages.stream({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      system: SYSTEM_PROMPT,
-      messages: apiMessages,
+    const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        stream: true,
+        system: SYSTEM_PROMPT,
+        messages: apiMessages,
+      }),
     });
 
+    if (!anthropicRes.ok) {
+      const status = anthropicRes.status;
+      return Response.json(
+        { error: getErrorMessage(status) },
+        { status }
+      );
+    }
+
+    // Parse SSE stream from Anthropic, extract text deltas, forward as plain text
     const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+
     const readable = new ReadableStream({
       async start(controller) {
+        const reader = anthropicRes.body.getReader();
+        let buffer = "";
+
         try {
-          for await (const event of stream) {
-            if (
-              event.type === "content_block_delta" &&
-              event.delta?.type === "text_delta"
-            ) {
-              controller.enqueue(encoder.encode(event.delta.text));
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop(); // keep incomplete line in buffer
+
+            for (const line of lines) {
+              if (!line.startsWith("data: ")) continue;
+              const data = line.slice(6).trim();
+              if (data === "[DONE]") continue;
+
+              try {
+                const event = JSON.parse(data);
+                if (
+                  event.type === "content_block_delta" &&
+                  event.delta?.type === "text_delta"
+                ) {
+                  controller.enqueue(encoder.encode(event.delta.text));
+                }
+              } catch {
+                // skip malformed JSON lines
+              }
             }
           }
           controller.close();
         } catch (err) {
           controller.enqueue(
-            encoder.encode(`\n[ERROR]${getErrorMessage(err)}`)
+            encoder.encode(`\n[ERROR]Chat failed. Please try again.`)
           );
           controller.close();
         }
@@ -69,22 +104,19 @@ export async function POST(request) {
     return new Response(readable, {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
-        "Transfer-Encoding": "chunked",
         "Cache-Control": "no-cache",
-        "X-Accel-Buffering": "no",
       },
     });
   } catch (err) {
     console.error("Chat error:", err);
-    return NextResponse.json(
-      { error: getErrorMessage(err) },
-      { status: err?.status || err?.statusCode || 500 }
+    return Response.json(
+      { error: "Chat failed. Please try again." },
+      { status: 500 }
     );
   }
 }
 
-function getErrorMessage(err) {
-  const status = err?.status || err?.statusCode || 500;
+function getErrorMessage(status) {
   if (status === 401)
     return "Invalid API key. Check your ANTHROPIC_API_KEY in Vercel environment variables.";
   if (status === 403)
@@ -93,10 +125,5 @@ function getErrorMessage(err) {
     return "Rate limited — too many requests. Wait a moment and try again.";
   if (status === 529)
     return "Anthropic's API is temporarily overloaded. Try again in a minute.";
-  if (
-    err?.error?.type === "insufficient_credits" ||
-    err?.message?.includes("credit")
-  )
-    return "API credits depleted. Top up at console.anthropic.com/settings/billing.";
   return "Chat failed. Please try again.";
 }
