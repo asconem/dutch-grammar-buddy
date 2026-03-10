@@ -223,20 +223,21 @@ export default function Home() {
   }, [chatMessages, isThinking, shouldAutoScroll]);
 
   useEffect(() => {
-    if (isBookmarked && activeHistoryIndex >= 0 && chatMessages.length > 0) {
+    if (isBookmarked && activeHistoryIndex >= 0 && (chatMessages.length > 0 || breakdown)) {
       setHistory((prev) => {
         const updated = [...prev];
         if (updated[activeHistoryIndex]) {
           updated[activeHistoryIndex] = {
             ...updated[activeHistoryIndex],
             chat: chatMessages,
+            breakdown: breakdown,
           };
           saveHistoryToServer(updated);
         }
         return updated;
       });
     }
-  }, [chatMessages, isBookmarked, activeHistoryIndex]);
+  }, [chatMessages, breakdown, isBookmarked, activeHistoryIndex]);
 
   const bookmarkCurrent = () => {
     if (!hasTranslated) return;
@@ -254,6 +255,7 @@ export default function Home() {
       dutch: dutchPhrase.trim(),
       english: translation,
       chat: chatMessages,
+      breakdown: breakdown,
       timestamp: Date.now(),
     };
     const updated = [entry, ...history.filter((h) => h.dutch !== dutchPhrase.trim())].slice(0, MAX_HISTORY);
@@ -290,48 +292,19 @@ export default function Home() {
     setHasTranslated(true);
     setShowHistory(false);
     setIsBookmarked(true);
-    setBreakdown(null);
     setShowBreakdown(false);
     const idx = history.findIndex((h) => h.dutch === entry.dutch && h.timestamp === entry.timestamp);
     setActiveHistoryIndex(idx);
-    fetchBreakdown(entry.dutch, entry.english);
-  };
-
-  const translatePhrase = async () => {
-    if (!dutchPhrase.trim()) return;
-    setIsTranslating(true);
-    setTranslation("");
-    setChatMessages([]);
-    setHasTranslated(false);
-    setIsBookmarked(false);
-    setActiveHistoryIndex(-1);
-    setParseError("");
-    setBreakdown(null);
-    setShowBreakdown(false);
-
-    try {
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phrase: dutchPhrase.trim() }),
-      });
-      const data = await res.json();
-      if (data.error) {
-        setTranslation(data.error);
-      } else {
-        setTranslation(data.translation || "Translation failed.");
-        setHasTranslated(true);
-        fetchBreakdown(dutchPhrase.trim(), data.translation);
-      }
-    } catch {
-      setTranslation("Translation error. Please try again.");
+    if (entry.breakdown) {
+      setBreakdown(entry.breakdown);
+    } else {
+      setBreakdown(null);
+      fetchBreakdown(entry.dutch, entry.english);
     }
-    setIsTranslating(false);
   };
 
-  const selectScreenshotPhrase = async (phrase) => {
-    setShowScreenshotPicker(false);
-    setDutchPhrase(phrase);
+  const doTranslation = async (phrase) => {
+    setIsTranslating(true);
     setTranslation("");
     setChatMessages([]);
     setHasTranslated(false);
@@ -340,7 +313,6 @@ export default function Home() {
     setParseError("");
     setBreakdown(null);
     setShowBreakdown(false);
-    setIsTranslating(true);
 
     try {
       const res = await fetch("/api/translate", {
@@ -360,6 +332,17 @@ export default function Home() {
       setTranslation("Translation error. Please try again.");
     }
     setIsTranslating(false);
+  };
+
+  const translatePhrase = async () => {
+    if (!dutchPhrase.trim()) return;
+    await doTranslation(dutchPhrase.trim());
+  };
+
+  const selectScreenshotPhrase = async (phrase) => {
+    setShowScreenshotPicker(false);
+    setDutchPhrase(phrase);
+    await doTranslation(phrase);
   };
 
   const handleScreenshot = async (e) => {
