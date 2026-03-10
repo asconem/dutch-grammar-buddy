@@ -1,4 +1,4 @@
-export const runtime = "edge";
+export const dynamic = "force-dynamic";
 
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
@@ -71,6 +71,7 @@ export async function POST(request) {
         "Content-Type": "text/plain; charset=utf-8",
         "Transfer-Encoding": "chunked",
         "Cache-Control": "no-cache",
+        "X-Accel-Buffering": "no",
       },
     });
   } catch (err) {
